@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.app.aplikacjasos
 
 import android.annotation.SuppressLint
@@ -12,9 +14,10 @@ import android.widget.TextView
 
 class MainActivity : AppCompatActivity() {
 
-    val REQUEST_PHONE_NUMBER = 1
-    lateinit var contactUri: Uri
+    private val requestPhoneNumber = 1
+    private lateinit var contactUri: Uri
 
+    @SuppressLint("QueryPermissionsNeeded")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -23,18 +26,16 @@ class MainActivity : AppCompatActivity() {
         selectNumberBtn.setOnClickListener{
 
             val intent = Intent(Intent.ACTION_PICK)
-
             intent.type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
-
             if(intent.resolveActivity(packageManager) != null){
-                startActivityForResult(intent,REQUEST_PHONE_NUMBER)
+                startActivityForResult(intent,requestPhoneNumber)
             }
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == REQUEST_PHONE_NUMBER && resultCode == Activity.RESULT_OK){
+        if(requestCode == requestPhoneNumber && resultCode == Activity.RESULT_OK){
             contactUri = data!!.data!!
             getPhoneNumber()
         }
@@ -42,12 +43,14 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("Range")
     private fun getPhoneNumber() {
-        val display_phone_number = findViewById<TextView>(R.id.displaySelectedTextView)
+        val displayPhoneNumber = findViewById<TextView>(R.id.displaySelectedTextView)
         val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER)
         val cursor = contentResolver.query(contactUri, projection, null, null, null)
         if(cursor!!.moveToFirst()){
             val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-            display_phone_number.text = "Selected phone number: \n $phoneNumber"
+            val selected = getString(R.string.selectedNumber, phoneNumber)
+            displayPhoneNumber.text = selected
         }
+        cursor.close()
     }
 }

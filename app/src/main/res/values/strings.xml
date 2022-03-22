@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">aplikacjaSOS</string>
+    <string name="selectedNumber">Selected phone number: \n%1$s</string>
+    <string name="selectNumBtn">Select contact</string>
 </resources>
