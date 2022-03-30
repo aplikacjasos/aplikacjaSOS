@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Aplikacja SOS</string>
+    <string name="telefon">Telefon</string>
+    <string name="zatwierd">Zatwierdź</string>
+    <string name="edytuj">Edytuj</string>
+    <string name="sosBtn">SOS Button</string>
+    <string name="_666666666">666666666</string>
+</resources>
