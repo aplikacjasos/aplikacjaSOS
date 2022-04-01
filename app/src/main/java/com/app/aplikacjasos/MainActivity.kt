@@ -10,7 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.widget.addTextChangedListener
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,12 +27,32 @@ class MainActivity : AppCompatActivity() {
 
         val selectNumberBtn = findViewById<Button>(R.id.selectNumberBtn)
         selectNumberBtn.setOnClickListener{
-
             val intent = Intent(Intent.ACTION_PICK)
             intent.type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
             if(intent.resolveActivity(packageManager) != null){
                 startActivityForResult(intent,requestPhoneNumber)
             }
+        }
+
+        val confirmPhoneButton = findViewById<Button> (R.id.confirmPhoneButton)
+        val inputPhone = findViewById<EditText>(R.id.phoneInput)
+
+        confirmPhoneButton.isEnabled = inputPhone.length() == 9
+
+        inputPhone.addTextChangedListener {
+            if (!inputPhone.hasFocus()) {
+                return@addTextChangedListener
+            }
+
+            confirmPhoneButton.isEnabled = inputPhone.text.length == 9
+        }
+
+        //Ustawienie kontaktu
+        confirmPhoneButton.setOnClickListener {
+            val intent = Intent(this, SOSWindow::class.java)
+            intent.putExtra("no",inputPhone.text.toString());
+            startActivity(intent)
+            finish()
         }
     }
 
@@ -43,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("Range")
     private fun getPhoneNumber() {
-        val displayPhoneNumber = findViewById<TextView>(R.id.displaySelectedTextView)
+        val displayPhoneNumber = findViewById<TextView>(R.id.phoneInput)
         val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER)
         val cursor = contentResolver.query(contactUri, projection, null, null, null)
         if(cursor!!.moveToFirst()){
