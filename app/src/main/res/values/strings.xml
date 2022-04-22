@@ -1,10 +1,15 @@
 <resources>
     <string name="selectedNumber">%1$s</string>
-    <string name="selectNumBtn">Wybierz numer z listy kontaktów</string>
+    <string name="selectNumber">Wybierz numer z listy kontaktów</string>
     <string name="app_name">Aplikacja SOS</string>
-    <string name="telefon">Telefon</string>
-    <string name="zatwierdz">Zatwierdź</string>
-    <string name="edytuj">Edytuj</string>
+    <string name="telefon">Wybierz numer z listy kontaktów aby zacząć</string>
+    <string name="zatwierd">Zatwierdź</string>
+    <string name="edytuj">Zapisz</string>
     <string name="sosBtn">SOS Button</string>
-    <string name="_666666666">666666666</string>
+    <string name="welcomeMessage">Zadbaj o siebie i powiadamiaj swoich bliskich gdy twoje życie ulegnie zagrożeniu</string>
+    <string name="welcomeImage">envelope in heart image</string>
+    <string name="msg_sms_placeholder">Wysłano SMS do:</string>
+    <string name="sms_title_placeholder">Treść Wiadomości:</string>
+    <string name="sms_content_placeholder">Przykładowa wiadomość</string>
+    <string name="stop_alarm">ZATRZYMAJ ALARM</string>
 </resources>

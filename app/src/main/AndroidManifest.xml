@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.app.aplikacjasos">
+
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:ignore="CoarseFineLocation" />
+
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="true" />
+
 
     <application
         android:allowBackup="true"
@@ -9,8 +22,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AplikacjaSOS">
+
         <activity
-            android:name=".MainActivity"
+            android:name=".MainWindow"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -18,8 +32,33 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
+        <activity
+            android:name=".SOSWindow"
+            android:exported="true">
+        </activity>
+
+        <activity
+            android:name=".EditPhoneWindow"
+            android:exported="true">
+            <meta-data android:name="android.support.PARENT_ACTIVITY" android:value=".SOSWindow"/>
+        </activity>
+
+        <activity
+            android:name=".MessagesWindow"
+            android:exported="true">
+            <meta-data android:name="android.support.PARENT_ACTIVITY" android:value=".SOSWindow"/>
+        </activity>
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_map_api_key"/>
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version"/>
+        <uses-library android:name="org.apache.http.legacy"
+            android:required="false"/>
+
+    </application>
 
 </manifest>

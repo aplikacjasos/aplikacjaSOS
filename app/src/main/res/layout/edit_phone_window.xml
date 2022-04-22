@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainWindow">
 
     <LinearLayout
         android:layout_width="0dp"
@@ -14,40 +14,33 @@
         android:padding="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
 
         <TextView
             android:id="@+id/phoneLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/telefon" />
-
-        <EditText
-            android:id="@+id/phoneInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="@string/_666666666"
-            android:importantForAutofill="no"
-            android:inputType="phone"
-            android:maxLength="9"
-            android:minHeight="48dp"
-            tools:ignore="TextContrastCheck,TextContrastCheck" />
+            android:text="@string/telefon"
+            android:textAlignment="center" />
+
+        <Button
+            android:id="@+id/selectNumberButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/selectNumber"
+            android:textColor="#FFFFFF"
+            tools:ignore="TextContrastCheck" />
 
         <Button
             android:id="@+id/confirmPhoneButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/zatwierdz"
+            android:text="@string/edytuj"
             android:textColor="#FFFFFF"
             tools:ignore="TextContrastCheck" />
-
-        <Button
-            android:id="@+id/selectNumberBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/selectNumBtn"/>
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
