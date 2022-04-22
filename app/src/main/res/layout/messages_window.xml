@@ -7,8 +7,8 @@
     tools:context=".MainWindow">
 
     <LinearLayout
-        android:layout_width="409dp"
-        android:layout_height="601dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -18,7 +18,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#C6C6C6">
+            app:cardBackgroundColor="#EDEDED">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -26,11 +26,38 @@
                 android:orientation="vertical"
                 android:padding="10dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/timeText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Godzina"
+                        android:textAlignment="textStart" />
+
+                    <TextView
+                        android:id="@+id/dateText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Data"
+                        android:textAlignment="textEnd" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp" />
+
                 <TextView
                     android:id="@+id/sentTo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Wysłano SMS do XXX-XXX-XXX"
+                    android:text="@string/msg_sms_placeholder"
                     tools:ignore="TextContrastCheck,TextContrastCheck" />
 
                 <Space
@@ -42,29 +69,39 @@
                     android:id="@+id/messageTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Treść Wiadomości:"
-                    tools:ignore="TextContrastCheck,TextContrastCheck" />
-
-                <TextView
-                    android:id="@+id/messageContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Znajduafaf ifudhsf uidfduf dshfdusf hdsufdhf udsfhds fshfhudsfhdsuf dshfudsh fudsfhsduf sfhdssdhfudsuhf sduhf hdsuf dshfdsuhdsu fdshuf dsufh"
+                    android:text="@string/sms_title_placeholder"
                     tools:ignore="TextContrastCheck,TextContrastCheck" />
 
                 <Space
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="10dp" />
+                    android:layout_margin="3dp" />
 
                 <TextView
-                    android:id="@+id/messageContentBottom"
+                    android:id="@+id/messageContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="TextView bla bla bla bla"
-                    tools:ignore="TextContrastCheck,TextContrastCheck" />
+                    android:text="@string/sms_content_placeholder"
+                    tools:ignore="TextContrastCheck,TextContrastCheck"
+                    android:autoLink="web"
+                    android:linksClickable="true" />
+
             </LinearLayout>
+
         </androidx.cardview.widget.CardView>
 
+        <fragment
+            android:id="@+id/map"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="281dp"
+            tools:context=".MapsActivity" />
+
+        <Button
+            android:id="@+id/stopAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:text="@string/stop_alarm" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
