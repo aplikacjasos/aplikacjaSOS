@@ -1,19 +1,21 @@
 package com.app.aplikacjasos.utils
 
+import com.app.aplikacjasos.model.Contact
 import java.io.Serializable
 
 class Message : Serializable {
-    private var phoneNumber: String = ""
-    private var fullName: String = ""
-    private var contentDisplay: String = ""
-    private var contentMessage: String = ""
-    private var streetName: String = ""
-    private var lat: Double = 0.0;
-    private var lon: Double = 0.0;
 
-    constructor(fullName: String, number: String, streetName: String, lat: Double, lon: Double) {
-        this.fullName = fullName
-        this.phoneNumber = number
+    private var contacts: List<Contact>
+
+    private var contentDisplay: String
+    private var contentMessage: String
+
+    private var lat: Double
+    private var lon: Double
+    private var streetName: String
+
+    constructor(contacts: List<Contact>, streetName: String, lat: Double, lon: Double) {
+        this.contacts = contacts
         this.streetName = streetName
         this.lat = lat
         this.lon = lon
@@ -49,12 +51,8 @@ class Message : Serializable {
                 "https://www.google.com/maps/search/?api=1&query=$lat,$lon"
     }
 
-    fun getFullName(): String {
-        return this.fullName
-    }
-
-    fun getPhoneNumber(): String {
-        return this.phoneNumber
+    fun getContacts(): List<Contact> {
+        return this.contacts
     }
 
     fun getMessageContentDisplay(): String {
@@ -75,5 +73,18 @@ class Message : Serializable {
 
     fun getLongitude(): Double {
         return this.lon;
+    }
+
+    override fun toString(): String {
+
+        var lista: ArrayList<String> = ArrayList()
+
+        this.contacts.forEach{
+            //val oneContact = it.contactName + " (" + it.phoneNumber + ")"
+            val oneContact = it.contactName + " (XXX-XXX-XXX)"
+            lista.add(oneContact)
+        }
+
+        return lista.joinToString(separator = ", ")
     }
 }

@@ -12,20 +12,34 @@ class SMS {
             return parsed.reversed().substring(0, 9).reversed()
         }
 
-        fun sendSMSMultipart(message: Message){
-            val number = "+48" + message.getPhoneNumber()
+        fun sendSMSMultipartForEach(message: Message){
+            var checkedContacts = message.getContacts()
 
-            val smsManager: SmsManager = SmsManager.getDefault()
-            val parts: ArrayList<String> = smsManager.divideMessage(message.getMessageContentMessage())
+            checkedContacts.forEach{
 
-            smsManager.sendMultipartTextMessage(number, null, parts, null, null)
+                val number = "+48" + it.phoneNumber
+
+                val smsManager: SmsManager = SmsManager.getDefault()
+                val parts: ArrayList<String> = smsManager.divideMessage(message.getMessageContentMessage())
+
+                smsManager.sendMultipartTextMessage(number, null, parts, null, null)
+
+            }
+
+
+
         }
 
-        fun sendSMS(message: Message){
-            val number = "+48" + message.getPhoneNumber()
+        fun sendSMSForEach(message: Message){
+            var checkedContacts = message.getContacts()
 
-            val smsManager: SmsManager = SmsManager.getDefault()
-            smsManager.sendTextMessage(number, null, message.getMessageContentMessage(), null, null)
+            checkedContacts.forEach{
+                val number = "+48" + it.phoneNumber
+
+                val smsManager: SmsManager = SmsManager.getDefault()
+                smsManager.sendTextMessage(number, null, message.getMessageContentMessage(), null, null)
+            }
+
         }
 
         fun isPhoneNumber(number: String?): Boolean {

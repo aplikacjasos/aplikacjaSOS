@@ -1,36 +1,36 @@
 package com.app.aplikacjasos
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.provider.ContactsContract
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import com.app.aplikacjasos.utils.SMS
+import com.app.aplikacjasos.service.ContactService
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
 class MainWindow : AppCompatActivity() {
 
-    private val requestPhoneNumber = 1
-    private lateinit var contactUri: Uri
-    lateinit var preferences: SharedPreferences
-    lateinit var phoneNumberShared: String
-    lateinit var fullNameShared: String
+    private var contactService: ContactService = ContactService();
+
+    private val contacts = contactService.allContactsInDatabase
 
     private val multiplePermissionContract = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionsStatusMap ->
         // permissionStatusMap is of type <String, Boolean>
         // if all permissions accepted
         if (!permissionsStatusMap.containsValue(false)) {
             Toast.makeText(this, "Zatwierdzono uprawnienie", Toast.LENGTH_SHORT).show()
+
+            val listaDevice = contactService.getAllDeviceContacts(this);
+            contactService.updateDeviceDatabaseContacts(listaDevice);
+
         } else {
             Toast.makeText(this, "Nie zaakceptowano wszystkich pozwoleń, aplikacja nie będzie działać prawidłowo", Toast.LENGTH_SHORT).show()
         }
@@ -47,81 +47,52 @@ class MainWindow : AppCompatActivity() {
             )
         )
 
-        preferences = getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
-
-        if(SMS.isPhoneNumber(preferences.getString("PhoneNumber", ""))) {
+        if(contactService.countCheckedElements(contacts) > 0) {
             val intent = Intent(this, SOSWindow::class.java)
             startActivity(intent)
             finish()
+        }
+
+        if(!isIgnoringBatteryOptimizations()) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Informacja")
+                .setMessage("Aplikacja nie będzie działać w tle jeśli nie zostanie wyłączona opcja oszczędzania energii." + System.getProperty("line.separator") + "1. Znajdź aplikację SOS" + System.getProperty("line.separator") + "2. Wyłącz oszczędzanie energii." + System.getProperty("line.separator") + "3. Zatwierdź zmiany")
+                .setPositiveButton("Zmień ustawienia") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS ))
+                }
+                .setNegativeButton("Wyjdź") { _, _ ->
+                }
+                .show()
         }
 
         val selectNumberBtn = findViewById<Button>(R.id.selectNumberButton)
         selectNumberBtn.setOnClickListener{
 
-            val intent = Intent(Intent.ACTION_PICK)
-            intent.type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
-            if(intent.resolveActivity(packageManager) != null){
-                startActivityForResult(intent,requestPhoneNumber)
-            }
+            val intent = Intent(this, ContactListView::class.java)
+            startActivity(intent)
+
         }
 
-        val confirmPhoneButton = findViewById<Button> (R.id.confirmPhoneButton)
-        confirmPhoneButton.isEnabled = false
+    }
 
-        //Ustawienie kontaktu
-        confirmPhoneButton.setOnClickListener {
+    override fun onResume() {
 
-            val editor = preferences.edit()
-            editor.putString("PhoneNumber", phoneNumberShared)
-            editor.putString("PhoneOwner", fullNameShared)
-            editor.apply()
-
+        if(contactService.countCheckedElements(contacts) > 0) {
             val intent = Intent(this, SOSWindow::class.java)
             startActivity(intent)
             finish()
         }
 
+        super.onResume()
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == requestPhoneNumber && resultCode == Activity.RESULT_OK){
-            contactUri = data!!.data!!
-            getPhoneNumber()
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val pwrm = this.applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val name = this.applicationContext.packageName
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return pwrm.isIgnoringBatteryOptimizations(name)
         }
-    }
-
-    @SuppressLint("Range")
-    private fun getPhoneNumber() {
-        val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-        val confirmPhoneButton = findViewById<Button> (R.id.confirmPhoneButton)
-
-        val cursor = contentResolver.query(contactUri, projection, null, null, null)
-        if(cursor!!.moveToFirst()){
-            val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
-            val fullName = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
-
-            val phoneLabel = findViewById<TextView> (R.id.phoneLabel)
-            val selected = getString(R.string.selectedNumber, phoneNumber)
-
-            val parsedPhone = SMS.toSMS(selected)
-
-            if(!SMS.isPhoneNumber(parsedPhone)) {
-                phoneLabel.setTextColor(Color.parseColor("#FF0000"))
-                phoneLabel.text = parsedPhone
-            } else {
-                phoneLabel.setTextColor(ContextCompat.getColor(this, androidx.activity.R.color.secondary_text_default_material_light))
-                phoneNumberShared = parsedPhone
-                fullNameShared = fullName
-
-                val labelMSG = fullName + System.getProperty("line.separator") + parsedPhone
-                phoneLabel.text = labelMSG
-            }
-
-            confirmPhoneButton.isEnabled = parsedPhone.length == 9
-
-        }
-        cursor.close()
+        return true
     }
 
 }

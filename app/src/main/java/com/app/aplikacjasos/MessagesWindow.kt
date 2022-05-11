@@ -13,8 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.app.aplikacjasos.utils.Message
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener
@@ -23,23 +21,10 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import android.location.Geocoder
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
-import androidx.core.app.ActivityCompat
-import android.Manifest
-import android.content.pm.PackageManager
-import android.util.Log
-import android.widget.Toast
-import java.io.IOException
-import java.util.*
-
 
 //, OnMapReadyCallback
 class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var preferences: SharedPreferences
     var mMediaPlayer: MediaPlayer? = null
     private lateinit var stopAlarm: Button
     private lateinit var timeNow: LocalDateTime
@@ -51,7 +36,6 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
     var currentMarker: Marker? = null
 
     private lateinit var mMap: GoogleMap
-    private val REQUEST_CODE = 101
 
     lateinit var msgBlock: Message
 
@@ -67,7 +51,7 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
 
         //Audio ustaw na maxa
         am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        am!!.setStreamVolume(AudioManager.STREAM_MUSIC, am!!.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
+        //am!!.setStreamVolume(AudioManager.STREAM_MUSIC, am!!.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
 
         timeNow = LocalDateTime.now()
 
@@ -87,12 +71,10 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
         actionBar?.setDisplayShowHomeEnabled(true)
         actionBar?.setDisplayHomeAsUpEnabled(true)
 
-        preferences = getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
-
         val receiver = findViewById<TextView> (R.id.sentTo)
         val content = findViewById<TextView> (R.id.messageContent)
 
-        val receiverMSG = "Wysłano SMS do: " + msgBlock.getFullName() + " (" + msgBlock.getPhoneNumber() + ")"
+        val receiverMSG = "Wysłano SMS do: $msgBlock"
         receiver.text = receiverMSG
         content.text = msgBlock.getMessageContentDisplay()
 
@@ -116,9 +98,6 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
             mMediaPlayer = MediaPlayer.create(this, R.raw.alarm)
             mMediaPlayer!!.isLooping = true
             mMediaPlayer!!.start()
-
-
-
         } else mMediaPlayer!!.start()
     }
 
@@ -139,7 +118,6 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
         googleMap.setOnMarkerDragListener(object : OnMarkerDragListener {
             override fun onMarkerDragStart(marker: Marker) {}
             override fun onMarkerDragEnd(marker: Marker) {
-                Log.d("====", "latitude : " + marker.position.latitude)
 
                 if (currentMarker != null) {
                     currentMarker?.remove()
@@ -162,14 +140,4 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
         currentMarker?.showInfoWindow()
     }
 
-    /*
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String?>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            REQUEST_CODE -> if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                fetchLocation()
-            }
-        }
-    }
-     */
 }

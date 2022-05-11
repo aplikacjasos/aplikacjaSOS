@@ -20,7 +20,7 @@
         app:layout_constraintVertical_bias="0.0">
 
         <ImageView
-            android:id="@+id/imageView2"
+            android:id="@+id/homeHeart"
             android:layout_width="match_parent"
             android:layout_height="195dp"
             android:contentDescription="@string/welcomeImage"
@@ -55,14 +55,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/selectNumber"
-            android:textColor="#FFFFFF"
-            tools:ignore="TextContrastCheck" />
-
-        <Button
-            android:id="@+id/confirmPhoneButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/zatwierd"
             android:textColor="#FFFFFF"
             tools:ignore="TextContrastCheck" />
 

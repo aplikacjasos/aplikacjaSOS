@@ -2,9 +2,10 @@ package com.app.aplikacjasos
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -13,17 +14,21 @@ import android.hardware.SensorManager
 import android.location.Geocoder
 import android.location.Location
 import android.os.*
+import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
+import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.app.aplikacjasos.model.Contact
+import com.app.aplikacjasos.service.ContactService
 import com.app.aplikacjasos.utils.Message
 import com.app.aplikacjasos.utils.SMS
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -37,24 +42,25 @@ import kotlin.math.sqrt
 
 class SOSWindow : AppCompatActivity(), SensorEventListener {
 
-    lateinit var preferences: SharedPreferences
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometer: Sensor
     private lateinit var accText: TextView
     private lateinit var sosButton: ImageButton
     private lateinit var countDownTimer2: CountDownTimer
 
+    private var contactService: ContactService = ContactService()
+
+    private lateinit var checkedContacts: List<Contact>
+
     private var sensorAccFlag = false
     private var startAcc = 0.0
     private var emergencyFlag = false
 
-    private var phoneNumber: String? = ""
-    private var fullName: String? = ""
+    private val FINE_LOCATION_RQ = 101
+    private var currentLocation: Location? = null
+    private var fusedLocationProviderClient: FusedLocationProviderClient? = null
 
-    val FINE_LOCATION_RQ = 101
-    val PERMISSION_SEND_SMS = 123;
-    var currentLocation: Location? = null
-    var fusedLocationProviderClient: FusedLocationProviderClient? = null
+    private val current = this
 
     private val multiplePermissionContract = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionsStatusMap ->
         // permissionStatusMap is of type <String, Boolean>
@@ -66,38 +72,52 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    @SuppressLint("InvalidWakeLockTag")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sos_window)
 
         multiplePermissionContract.launch(
             arrayOf(
-                android.Manifest.permission.SEND_SMS,
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.SEND_SMS,
+                Manifest.permission.ACCESS_FINE_LOCATION,
             )
         )
 
-        //checkForPermissions(android.Manifest.permission.ACCESS_FINE_LOCATION, "location", FINE_LOCATION_RQ)
-        //checkForPermissions(android.Manifest.permission.SEND_SMS, "sendSMS", PERMISSION_SEND_SMS)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        if(!isIgnoringBatteryOptimizations()) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Informacja")
+                .setMessage("Aplikacja nie będzie działać w tle jeśli nie zostanie wyłączona opcja oszczędzania energii." + System.getProperty("line.separator") + "1. Znajdź aplikację SOS" + System.getProperty("line.separator") + "2. Wyłącz oszczędzanie energii." + System.getProperty("line.separator") + "3. Zatwierdź zmiany")
+                .setPositiveButton("Zmień ustawienia") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS ))
+                }
+                .setNegativeButton("Wyjdź") { _, _ ->
+                }
+                .show()
+        }
 
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel("SOSapp", "SOSapp", NotificationManager.IMPORTANCE_HIGH)
+            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         accText = findViewById(R.id.testAcc)
-
         sosButton = findViewById(R.id.SOSButton)
-        preferences = getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
 
-        phoneNumber = preferences.getString("PhoneNumber", "")
-        fullName = preferences.getString("PhoneOwner", "")
-
-        val current = this
         var flag = false
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+
         val countDownTimer = object : CountDownTimer(3000, 1000) {
+
             override fun onTick(millisUntilFinished: Long) {
                 flag = false
                 Toast.makeText(
@@ -109,11 +129,13 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
 
             override fun onFinish() {
                 flag = true
-                fetchLocationAndSendSMSAndRetiretToMessages()
+
+                checkedContacts = contactService.checkedContacts
+                fetchLocationAndSendSMSAndRedirectToMessages()
             }
         }
 
-        countDownTimer2 = object : CountDownTimer(5000, 1000) {
+        countDownTimer2 = object : CountDownTimer(10000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
 
                 val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -134,7 +156,22 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
             }
 
             override fun onFinish() {
-                fetchLocationAndSendSMSAndRetiretToMessages()
+                val builder = NotificationCompat.Builder(current, "SOSapp")
+                    .setSmallIcon(R.drawable.img_sercokoperta)
+                    .setContentTitle("Wysłano alert SOS")
+                    .setContentText("Alert SOS został wysłany do wybranych osób.")
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+                val uniqueId: Int = (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+                with(NotificationManagerCompat.from(current)) {
+                    notify(uniqueId, builder.build())
+                }
+
+                emergencyFlag = false
+                sensorManager.registerListener(current, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+
+                checkedContacts = contactService.checkedContacts
+                fetchLocationAndSendSMSAndRedirectToMessages()
             }
 
         }
@@ -182,7 +219,7 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
         return retVal
     }
 
-    private fun fetchLocationAndSendSMSAndRetiretToMessages() {
+    private fun fetchLocationAndSendSMSAndRedirectToMessages() {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
             && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -196,7 +233,7 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
             if (location != null) {
                 currentLocation = location
 
-                var address: String? = null;
+                var address: String? = null
 
                 try {
                     address = getTheAddress(currentLocation!!.latitude, currentLocation!!.longitude)
@@ -204,13 +241,14 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
                     address = "Nie znaleziono adresu"
                 }
 
-                val msgBlock = Message(fullName!!, phoneNumber!!, address!!, currentLocation!!.latitude, currentLocation!!.longitude)
+                val msgBlock = Message(checkedContacts, address!!, currentLocation!!.latitude, currentLocation!!.longitude)
 
                 val intent = Intent(this, MessagesWindow::class.java)
                 intent.putExtra("message_object", msgBlock as Serializable)
 
                 try {
-                    SMS.sendSMSMultipart(msgBlock)
+
+                    SMS.sendSMSMultipartForEach(msgBlock)
 
                     if(emergencyFlag) {
                         emergencyFlag = false
@@ -219,15 +257,7 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
                     sosButton.imageAlpha = 255
 
                     startActivity(intent)
-                    /*
-                    MaterialAlertDialogBuilder(current)
-                        .setMessage("Wysłano wiadomość SMS")
-                        .setPositiveButton("OK") { _, _ ->
-                            startActivity(intent)
-                        }
-                        .setCancelable(false)
-                        .show()
-                     */
+
                 } catch (e: Exception) {
                     MaterialAlertDialogBuilder(this)
                         .setMessage("Nie udało się wysłać wiadomości: " + e.message)
@@ -236,23 +266,19 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
                         .setCancelable(false)
                         .show()
                 }
-
-
-
-
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        emergencyFlag = false
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        //emergencyFlag = false
+        //sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+        //sensorManager.unregisterListener(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -262,63 +288,21 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if(item.itemId == R.id.editNumber) {
-            val intent = Intent(this, EditPhoneWindow::class.java)
+            val intent = Intent(this, ContactListView::class.java)
             startActivity(intent)
-        }
+        } /*else if(item.itemId == R.id.backgroundProcess) {
+            val intent = Intent(this, BackgroundService::class.java)
+            startService(intent)
+            finish()
+        }*/
         return super.onOptionsItemSelected(item)
     }
-
-    /*
-    private fun checkForPermissions(permission: String, name: String, requestCode: Int){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            when {
-                ContextCompat.checkSelfPermission(applicationContext,permission) == PackageManager.PERMISSION_GRANTED ->{
-                    Toast.makeText(applicationContext, "$name permission granted",Toast.LENGTH_SHORT).show()
-                }
-                shouldShowRequestPermissionRationale(permission) -> showDialog(permission,name,requestCode)
-                else -> ActivityCompat.requestPermissions(this, arrayOf(permission),requestCode)
-
-            }
-
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int,permissions: Array<out String>,grantResults: IntArray)
-    {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        fun innerCheck(name: String){
-            if(grantResults.isEmpty() || grantResults[0] != PackageManager.PERMISSION_GRANTED){
-                Toast.makeText(applicationContext,"$name permission refused",Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(applicationContext, "$name permission granted", Toast.LENGTH_SHORT).show()
-            }
-        }
-        when(requestCode){
-            FINE_LOCATION_RQ -> innerCheck("location")
-        }
-
-    }
-
-    private fun showDialog(permission: String,name: String, requestCode: Int) {
-        val builder = AlertDialog.Builder(this)
-        builder.apply {
-            setMessage("Permission to acces your $name is required to use this app")
-            setTitle("Permission required")
-            setPositiveButton("OK") {dialog, which ->
-                ActivityCompat.requestPermissions(this@SOSWindow, arrayOf(permission),requestCode)
-            }
-        }
-        val dialog = builder.create()
-        dialog.show()
-    }
-    */
-
 
     @SuppressLint("ServiceCast")
     override fun onSensorChanged(p0: SensorEvent?) {
         val x = p0!!.values[0].toDouble()
-        val y = p0!!.values[1].toDouble()
-        val z = p0!!.values[2].toDouble()
+        val y = p0.values[1].toDouble()
+        val z = p0.values[2].toDouble()
 
         val total = sqrt(x * x + y * y + z * z)
 
@@ -331,30 +315,18 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
         accText.text = measure
 
         if (total < 2) {
-            /*
-            MaterialAlertDialogBuilder(this)
-                .setMessage("Wykryto spadanie")
-                .setPositiveButton("OK") {_, _ ->
-                }
-                .setCancelable(false)
-                .show()
-             */
             emergencyFlag = true
         } else if (total > 2.5 * startAcc) {
-            /*
-            MaterialAlertDialogBuilder(this)
-                .setMessage("Wykryto przyspieszenie")
-                .setPositiveButton("OK") {_, _ ->
-                }
-                .setCancelable(false)
-                .show()
-             */
             emergencyFlag = true
         }
 
         if (emergencyFlag) {
             sosButton.imageAlpha = 100
             sensorManager.unregisterListener(this)
+
+            //to fg
+            bringActivityToForeground()
+
             countDownTimer2.start()
         }
     }
@@ -362,4 +334,20 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
         //TODO("Not yet implemented")
     }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val pwrm = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val name = applicationContext.packageName
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return pwrm.isIgnoringBatteryOptimizations(name)
+        }
+        return true
+    }
+
+    private fun bringActivityToForeground() {
+        val intent = Intent(this, javaClass)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        applicationContext.startActivity(intent)
+    }
+
 }
