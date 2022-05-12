@@ -312,7 +312,7 @@ class SOSWindow : AppCompatActivity(), SensorEventListener {
         }
 
         val measure = "Init: $startAcc - Mes: $total"
-        accText.text = measure
+        //accText.text = measure
 
         if (total < 2) {
             emergencyFlag = true

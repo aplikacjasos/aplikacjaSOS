@@ -80,8 +80,8 @@ class Message : Serializable {
         var lista: ArrayList<String> = ArrayList()
 
         this.contacts.forEach{
-            //val oneContact = it.contactName + " (" + it.phoneNumber + ")"
-            val oneContact = it.contactName + " (XXX-XXX-XXX)"
+            val oneContact = it.contactName + " (" + it.phoneNumber + ")"
+            //val oneContact = it.contactName + " (XXX-XXX-XXX)"
             lista.add(oneContact)
         }
 

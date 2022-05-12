@@ -51,7 +51,7 @@ class MessagesWindow : AppCompatActivity(), OnMapReadyCallback {
 
         //Audio ustaw na maxa
         am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        //am!!.setStreamVolume(AudioManager.STREAM_MUSIC, am!!.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
+        am!!.setStreamVolume(AudioManager.STREAM_MUSIC, am!!.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
 
         timeNow = LocalDateTime.now()
 
